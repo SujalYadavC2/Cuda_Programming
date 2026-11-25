@@ -1,8 +1,40 @@
-This is the introduction to the coda programming. The idea from here is that you write a kernel(function) which you launch in the 
-main function. The kernel will be executed on the GPU where as the main function will use CPU to print or do stuff that you do not GPU for and 
-send the job to GPU as a kernel call. **CPU does not wait to the kernel to finish it job.** so to make sure the code in the our main function is 
-not executed before completion of any kernel call before that we use a command `cudaDeviceSynchronize()` or CDS for remembering. 
+## Core idea
+- A **kernel** is a function you write that runs on the **GPU**.
+- The `main` function runs on the **CPU**. It does the normal work (printing, setup) and sends jobs to the GPU as kernel launches.
 
-It also teaches the concept of queue. So If I launch two kernels one after another, the second kernel will go in the queue and it will be executed
-after first kernel call is over. Also you can select number of blocks and number of thread in those block at the time of a kernel launch, **This is where
-the parallelisation comes into the picture**
+```cpp
+__global__ void myKernel() {   // __global__ = runs on GPU, called from CPU
+    // work done by each thread
+}
+
+int main() {
+    myKernel<<<numBlocks, threadsPerBlock>>>();  // kernel launch
+    cudaDeviceSynchronize();                     // wait for GPU to finish
+    return 0;
+}
+```
+
+---
+
+## Q: Does the CPU wait for a kernel to finish?
+**No. Kernel launches are asynchronous.** The CPU launches the kernel and moves straight on to the next line.
+
+## Q: How do I make sure the CPU waits for the GPU?
+Call `cudaDeviceSynchronize()` ("CDS"). It blocks the CPU until all previously launched GPU work is done.
+- Use it before the CPU reads results or prints anything that depends on the kernel.
+
+## Q: What happens if I launch two kernels back to back?
+They go into a **queue** (called a **stream**). The second kernel starts only after the first one finishes.
+- If you don't specify a stream, kernels go to the **default stream**, so they run in launch order.
+- Note: the CPU still doesn't wait. The ordering happens on the GPU side.
+
+## Q: Where does the parallelism come from?
+From the launch configuration `<<<numBlocks, threadsPerBlock>>>`:
+- The kernel runs **once per thread**, with all threads running in parallel.
+- Threads are grouped into **blocks**.
+- Total threads = `numBlocks × threadsPerBlock`.
+
+---
+
+## Open questions / to revisit
+- (add anything that confused you here)
