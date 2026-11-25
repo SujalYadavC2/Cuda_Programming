@@ -22,6 +22,7 @@ int main() {
 ## Q: How do I make sure the CPU waits for the GPU?
 Call `cudaDeviceSynchronize()` ("CDS"). It blocks the CPU until all previously launched GPU work is done.
 - Use it before the CPU reads results or prints anything that depends on the kernel.
+- GPU `printf` does not write directly to screen, it writes into a buffer and it only get flushed out at sync points like CDS.
 
 ## Q: What happens if I launch two kernels back to back?
 They go into a **queue** (called a **stream**). The second kernel starts only after the first one finishes.
